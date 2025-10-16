@@ -1,7 +1,7 @@
 [project]
 name = "the-coolest"
 version = "0.1.0"
-description = "Add your description here"
+description = "NER/NEL model for S7 Airlines"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
