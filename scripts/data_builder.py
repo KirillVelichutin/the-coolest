@@ -7,23 +7,27 @@ fake = Faker(locale='ru_RU')
 df = pd.read_csv(os.path.join('data', 'airports_rus.csv'))
 
 TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE']
-DATAGEN = {
-    'PHONE': fake.phone_number(),
-    'PASSPORT': fake.passport_number(),
-    'NAME': fake.name(),
-    'DOB': fake.date_of_birth(),
-    'EMAIL': fake.email(),
-    'AIRPORT': random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna()),
-    'FLIGHT': 'NONE',
-    'CITY': fake.city_name(),
-    'TIME': fake.time(),
-    'DATE': fake.date()
-}
+
+def getRandomData(tag):
+    global df
+    DATAGEN = {
+        'PHONE': fake.phone_number(),
+        'PASSPORT': fake.passport_number(),
+        'NAME': fake.name(),
+        'DOB': fake.date_of_birth(),
+        'EMAIL': fake.email(),
+        'AIRPORT': '', #random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna()),
+        'FLIGHT': 'NONE',
+        'CITY': fake.city_name(),
+        'TIME': fake.time(),
+        'DATE': fake.date()
+    }
+    return DATAGEN[tag]
 
 
 def replaceAndLabel(message):
     
-    global TAGS, DATAGEN
+    global TAGS
 
     obj = {
         'text': message,
@@ -40,7 +44,7 @@ def replaceAndLabel(message):
             augmented_message = ''
             
             for i in range(len(split_message) - 1):
-                rnd_data = str(DATAGEN[tag])
+                rnd_data = str(getRandomData(tag))
                 tmp_entities[rnd_data] = tag
                 augmented_message += f'{split_message[i]}{rnd_data}'
                 
