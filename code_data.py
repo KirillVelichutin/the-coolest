@@ -67,7 +67,7 @@ DATAGEN = {
     'TRANSFERS': lambda: str(random.randint(0, 3)),
     'CLASS': lambda: random.choice(['Эконом', 'Бизнес', 'Первый']),
     'AIRLINE': lambda: random.choice(['Аэрофлот', 'S7 Airlines', 'Уральские авиалинии', 'Победа', 'Red Wings']),
-    'BAGGAGE': lambda: random.choice(['1 место', '2 места', 'ручная кладь'])
+    'BAGGAGE': lambda: random.choice(['1 багаж', '2 багажа', 'ручная кладь'])
 }
 
 
