@@ -3,10 +3,14 @@ import pandas as pd
 import random
 import os
 
+from generators import setup_faker_providers, get_all_document_types
+
 fake = Faker(locale='ru_RU')
+fake = setup_faker_providers(fake)  # добавляем кастомные провайдеры!
 df = pd.read_csv(os.path.join('data', 'airports_rus.csv'))
 
-TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE', 'TICKET']
+TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE',  'INTERNATIONAL_PASSPORT', 'TICKET_NUMBER', 'ORDER_NUMBER']
+
 DATAGEN = {
     'PHONE': lambda: fake.phone_number(),
     'PASSPORT': lambda: fake.passport_number(),
@@ -14,14 +18,20 @@ DATAGEN = {
     'DOB': lambda: fake.date_of_birth(),
     'EMAIL': lambda: fake.email(),
     'AIRPORT': lambda: random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna().reset_index(drop=True)),
-    'TICKET': lambda: ''.join([str(random.randint(0, 9)) for _ in range(13)]), 
+    # 'TICKET': lambda: ''.join([str(random.randint(0, 9)) for _ in range(13)]), 
     'FLIGHT': lambda: f"{random.choice(['SU', 'AF', 'LH', 'TK', 'BA', 'AY', 'S7', 'U6'])}{random.randint(100, 9999)}",
     'CITY': lambda: fake.city_name(),
     'TIME': lambda: fake.time(),
-    'DATE': lambda: fake.date()
+    'DATE': lambda: fake.date(),
+    'INTERNATIONAL_PASSPORT': lambda: fake.international_passport(),
+    #'BIRTH_CERTIFICATE': lambda: fake.birth_certificate(),
+    #'VISA': lambda: fake.visa(),
+    'TICKET_NUMBER': lambda: fake.ticket_number(),
+    #'BOOKING_REF': lambda: fake.booking_ref(),
+    #'BOARDING_PASS': lambda: fake.boarding_pass(),
+    #'EMD_NUMBER': lambda: fake.emd_number(),
+    'ORDER_NUMBER': lambda: fake.order_number()
 }
-
-
 
 def replaceAndLabel(message):
     
@@ -59,17 +69,17 @@ def replaceAndLabel(message):
     
 
 if __name__ == '__main__':
-    # import json
-    # with open('data/raw_data_ts.json', 'r') as f:
-    #     raw_data = json.load(f)
+    import json
+    with open('data/raw_data_ts.json', 'r') as f:
+        raw_data = json.load(f)
     
-    # processed_data = []
+    processed_data = []
 
-    # for obj in raw_data:
-    #     processed_data.append(replaceAndLabel(obj['message']))
+    for obj in raw_data:
+        processed_data.append(replaceAndLabel(obj['message']))
 
-    # with open('data/processed_data_ts.json', 'w', encoding='utf-8') as f:
-    #     f.truncate(0)
-    #     json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    with open('data/processed_data_ts.json', 'w', encoding='utf-8') as f:
+        f.truncate(0)
+        json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
-    print(replaceAndLabel("Для бизнес-зала нужны данные? Вот: NAME EMAIL PASSPORT AIRPORT"))
+    #print(replaceAndLabel("Для бизнес-зала нужны данные? Вот: NAME EMAIL PASSPORT AIRPORT"))
