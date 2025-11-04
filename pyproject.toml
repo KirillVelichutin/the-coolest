@@ -6,5 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "faker>=37.11.0",
+    "faker-airtravel>=0.4",
+    "generators>=2020.4.27",
     "pandas>=2.3.3",
 ]
