@@ -3,7 +3,8 @@ import pandas as pd
 import random
 import os
 
-from generators import setup_faker_providers, get_all_document_types
+from loc_generators import setup_faker_providers, get_all_document_types
+from parse import jsonl_to_json
 
 fake = Faker(locale='ru_RU')
 fake = setup_faker_providers(fake)  # добавляем кастомные провайдеры!
@@ -17,20 +18,22 @@ DATAGEN = {
     'NAME': lambda: fake.name(),
     'DOB': lambda: fake.date_of_birth(),
     'EMAIL': lambda: fake.email(),
-    'AIRPORT': lambda: random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna().reset_index(drop=True)),
-    # 'TICKET': lambda: ''.join([str(random.randint(0, 9)) for _ in range(13)]), 
+    'AIRPORT': lambda: random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna().reset_index(drop=True)), 
     'FLIGHT': lambda: f"{random.choice(['SU', 'AF', 'LH', 'TK', 'BA', 'AY', 'S7', 'U6'])}{random.randint(100, 9999)}",
     'CITY': lambda: fake.city_name(),
     'TIME': lambda: fake.time(),
     'DATE': lambda: fake.date(),
     'INTERNATIONAL_PASSPORT': lambda: fake.international_passport(),
-    #'BIRTH_CERTIFICATE': lambda: fake.birth_certificate(),
-    #'VISA': lambda: fake.visa(),
     'TICKET_NUMBER': lambda: fake.ticket_number(),
+    'ORDER_NUMBER': lambda: fake.order_number(),
+    'COUNTRY': lambda: fake.country()
     #'BOOKING_REF': lambda: fake.booking_ref(),
     #'BOARDING_PASS': lambda: fake.boarding_pass(),
     #'EMD_NUMBER': lambda: fake.emd_number(),
-    'ORDER_NUMBER': lambda: fake.order_number()
+    #'TICKET': lambda: ''.join([str(random.randint(0, 9)) for _ in range(13)]),
+    #'BIRTH_CERTIFICATE': lambda: fake.birth_certificate(),
+    #'VISA': lambda: fake.visa(),
+    
 }
 
 def replaceAndLabel(message):
@@ -70,15 +73,14 @@ def replaceAndLabel(message):
 
 if __name__ == '__main__':
     import json
-    with open('data/raw_data_ts.json', 'r') as f:
-        raw_data = json.load(f)
-    
+
+    raw_data = jsonl_to_json('data/raw_completedata1.jsonl')
     processed_data = []
 
     for obj in raw_data:
         processed_data.append(replaceAndLabel(obj['message']))
 
-    with open('data/processed_data_ts.json', 'w', encoding='utf-8') as f:
+    with open('data/processed_completedata1.json', 'w', encoding='utf-8') as f:
         f.truncate(0)
         json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
