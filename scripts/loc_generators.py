@@ -60,19 +60,11 @@ class AviationDocumentsProvider(BaseProvider):
     
     def ticket_number(self):
         """Генерация номера авиабилета"""
-        airline_codes = ['421']   #, '555', '262', '124']  S7, SU, U6, AC
+        airline_codes = ['421', '555', '262', '124'] #  S7, SU, U6, AC
         airline = random.choice(airline_codes)
         number = f"{self.random_int(1000000000, 9999999999)}"
-        
-        formats = [
-            # f"{airline} {number}",            421 1234567890
-            f"{airline}{number}",             # 4211234567890
-            # f"{airline}-{number}",            421-1234567890
-            # f"{airline} {number[:4]} {number[4:]}",  421 1234 567890
-            f"билет {airline}{number}",     # билет 4211234567890
-            f"номер билета {airline}{number}"
-        ]
-        return random.choice(formats)
+
+        return f"{airline}{number}"
     
     def booking_ref(self):
         """Генерация номера бронирования (PNR)"""

@@ -2,6 +2,7 @@ from faker import Faker
 import pandas as pd
 import random
 import os
+import json
 
 from loc_generators import setup_faker_providers, get_all_document_types
 from parse import jsonl_to_json
@@ -10,7 +11,7 @@ fake = Faker(locale='ru_RU')
 fake = setup_faker_providers(fake)  # добавляем кастомные провайдеры!
 df = pd.read_csv(os.path.join('data', 'airports_rus.csv'))
 
-TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE',  'INTERNATIONAL_PASSPORT', 'TICKET_NUMBER', 'ORDER_NUMBER']
+TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE',  'INTERNATIONAL', 'TICKET_NUMBER', 'ORDER_NUMBER']
 
 DATAGEN = {
     'PHONE': lambda: fake.phone_number(),
@@ -23,7 +24,7 @@ DATAGEN = {
     'CITY': lambda: fake.city_name(),
     'TIME': lambda: fake.time(),
     'DATE': lambda: fake.date(),
-    'INTERNATIONAL_PASSPORT': lambda: fake.international_passport(),
+    'INTERNATIONAL': lambda: fake.international_passport(),
     'TICKET_NUMBER': lambda: fake.ticket_number(),
     'ORDER_NUMBER': lambda: fake.order_number(),
     'COUNTRY': lambda: fake.country()
@@ -61,7 +62,8 @@ def replaceAndLabel(message):
                 
                 if i == len(split_message) - 2:
                     augmented_message += split_message[i + 1]
-            
+            if len(augmented_message) < 2:
+                augmented_message = f'ERROR: {obj['text']}'
             obj['text'] = augmented_message
     
     # marking out the message
@@ -69,19 +71,35 @@ def replaceAndLabel(message):
         obj['entities'].append((obj['text'].find(key), obj['text'].find(key) + len(key), tmp_entities[key]))
     
     return obj
-    
+
+def count_tags(path):
+    with open(path) as f:
+        data = json.load(f)
+
+        tags = []
+
+        for obj in data:
+            for ent in obj['entities']:
+                tags.append(ent[2])
+
+        tag_data = []
+        for tag in set(tags):
+            tag_data.append((tag, tags.count(tag)))
+        
+        return tag_data
 
 if __name__ == '__main__':
-    import json
-
-    raw_data = jsonl_to_json('data/raw_completedata1.jsonl')
+    raw_data = jsonl_to_json('data/test_gen.jsonl')
     processed_data = []
 
     for obj in raw_data:
         processed_data.append(replaceAndLabel(obj['message']))
 
-    with open('data/processed_completedata1.json', 'w', encoding='utf-8') as f:
+    with open('data/processed_test.json', 'w', encoding='utf-8') as f:
         f.truncate(0)
         json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
-    #print(replaceAndLabel("Для бизнес-зала нужны данные? Вот: NAME EMAIL PASSPORT AIRPORT"))
+    # print(replaceAndLabel("Добрый день! Мой билет TICKET_NUMBER. Летим в COUNTRY. Дата рождения DOB."))
+    # print(fake.ticket_number())
+
+    print(count_tags('data/processed_test.json'))
