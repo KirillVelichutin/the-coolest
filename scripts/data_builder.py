@@ -4,8 +4,9 @@ import random
 import os
 import json
 
-from loc_generators import setup_faker_providers, get_all_document_types
+from loc_generators import setup_faker_providers
 from parse import jsonl_to_json
+#from context_gen import hf_api_completion
 
 fake = Faker(locale='ru_RU')
 fake = setup_faker_providers(fake)  # добавляем кастомные провайдеры!
@@ -72,34 +73,118 @@ def replaceAndLabel(message):
     
     return obj
 
-def count_tags(path):
-    with open(path) as f:
-        data = json.load(f)
+def count_tags(path=None, dict=None):
+    if path:
+        with open(path) as f:    
+            data = json.load(f)
+    elif dict:
+        data = dict
 
-        tags = []
+    tags = []
+    for obj in data:
+        for ent in obj['entities']:
+            tags.append(ent[2])
 
-        for obj in data:
-            for ent in obj['entities']:
-                tags.append(ent[2])
+    tag_data = {}
+    for tag in set(tags):
+        tag_data[tag] =  tags.count(tag)
+    
+    return tag_data
+    
+def generate_data(size, export_file=None):
 
-        tag_data = []
-        for tag in set(tags):
-            tag_data.append((tag, tags.count(tag)))
+    tags = {
+        'PASSPORT': 'номер паспорта - PASSPORT', 
+        'PHONE': 'номер телефона - PHONE', 
+        'NAME': 'ФИО - NAME', 
+        'EMAIL': 'электронная почта - EMAIL', 
+        'DOB': 'дата рождения - DOB', 
+        'AIRPORT': 'название или код аэропорта - AIRPORT', 
+        'CITY': 'город - CITY', 
+        'COUNTRY': 'страна - COUNTRY', 
+        'FLIGHT': 'номер рейса - FLIGHT', 
+        'DATE': 'дата - DATE', 
+        'TIME': 'время - TIME', 
+        'INTERNATIONAL': 'загранпаспорт - INTERNATIONAL', 
+        'TICKET_NUMBER': 'номер билета - TICKET_NUMBER', 
+        'ORDER_NIMBER': 'номер бронирования или номер заказа - ORDER_NUMBER'}
+    
+    excluded_tags = []
+
+    n_each = round(size / len(tags))
+    n_batch = max(round(size / 100), 10)
+
+    data = []
+
+    while len(excluded_tags) < len(tags): # балансировка данных по тегам
+
+        tag_combo = ''
+        for _ in range(random.randint(0, round(len(tags.keys()) / 2))):
+            flag = True
+            while flag:
+                new_tag = random.choice(list(tags.keys()))
+                print(new_tag, new_tag in excluded_tags)
+                if new_tag not in tag_combo and new_tag not in excluded_tags:
+                    tag_combo += tags[new_tag] + ', '
+                    flag = False
+
+        print(tag_combo)
+
+        request = f'сгенерируй {n_batch} строк в формате JSONL (каждая строчка формата "message": "_СООБЩЕНИЕ_") сообщений пользователей боту-помощнику авиакомпании, в которых они пишут ему свои персональные данные. Замени персональные данные в сообщениях специальными строками: {tag_combo}. В каждом сообщении встречаются все перечесленные теги. Пользователи иногда пишут неграмотно, встречаются сообщения разной длины. Теги не встречаются без контекста - в сообщении всегда есть другие слова. Иногда, но редко, пользователи пишут грубо. Пользователи часто не здороваются, иногда печатают в спешкеСтарайся не повторять формулировки'
+        print('\nwaiting for response...\n')
+        lines = [json.loads(line) for line in hf_api_completion(request)]
+
+        print(lines[0:10])
+
+        for obj in lines:
+            data.append(replaceAndLabel(obj['message']))
         
-        return tag_data
+        count = count_tags(dict=data)
+        print(count)
+        for tag in tags.keys():
+            if tag in count.keys() and int(count[tag]) > n_each:
+                if tag not in excluded_tags:
+                    excluded_tags.append(tag)
+                    print(f'excluded {tag}')
+
+        print(len(tags), len(excluded_tags), excluded_tags)
+
+    print(data[0:10])
+    
+    if export_file:
+        json.load(data)
+        try:
+            with open(export_file, 'x') as f:
+                json.dump(data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+        except:
+
+            with open(export_file, 'w', encoding='utf-8') as f:
+                f.truncate(0)
+                json.dump(data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    
+    return data
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
-    raw_data = jsonl_to_json('data/test_gen.jsonl')
-    processed_data = []
+    print(fake.order_number())
+    # #print(generate_data(30, 'testfile.json'))
+    # raw_data = jsonl_to_json('data/test_gen.jsonl')
+    # processed_data = []
 
-    for obj in raw_data:
-        processed_data.append(replaceAndLabel(obj['message']))
+    # for obj in raw_data:
+    #     processed_data.append(replaceAndLabel(obj['message']))
 
-    with open('data/processed_test.json', 'w', encoding='utf-8') as f:
-        f.truncate(0)
-        json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    # with open('data/processed_test.json', 'w', encoding='utf-8') as f:
+    #     f.truncate(0)
+    #     json.dump(processed_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
-    # print(replaceAndLabel("Добрый день! Мой билет TICKET_NUMBER. Летим в COUNTRY. Дата рождения DOB."))
-    # print(fake.ticket_number())
+    # # print(replaceAndLabel("Добрый день! Мой билет TICKET_NUMBER. Летим в COUNTRY. Дата рождения DOB."))
+    # # print(fake.ticket_number())
 
-    print(count_tags('data/processed_test.json'))
+    # print(count_tags('data/processed_test.json'))

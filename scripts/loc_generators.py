@@ -122,10 +122,10 @@ class AviationDocumentsProvider(BaseProvider):
         formats = [
             random_chars,                                      # DRE5TW6
             f"ORD{random_chars}",                             # ORDDRE5TW6
-            f"ORDER-{random_chars}",                          # ORDER-DRE5TW6
-            f"ЗАКАЗ{random_chars}",                           # ЗАКАЗDRE5TW6
-            f"№{random_chars}",                               # №DRE5TW6
-            f"заказ №{random_chars}",                         # заказ №DRE5TW6
+            #f"ORDER-{random_chars}",                          # ORDER-DRE5TW6
+            #f"ЗАКАЗ{random_chars}",                           # ЗАКАЗDRE5TW6
+            #f"№{random_chars}",                               # №DRE5TW6
+            #f"заказ №{random_chars}",                         # заказ №DRE5TW6
             f"{random_chars[:3]}-{random_chars[3:]}",         # DRE-5TW6
             f"{random_chars[:2]}{random_chars[2:4]}{random_chars[4:]}",  # DR E5 TW6 (без пробелов)
         ]

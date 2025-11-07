@@ -2,7 +2,7 @@ import json
 
 import spacy
 from spacy.tokens import DocBin
-import json
+from spacy.training import offsets_to_biluo_tags
 
 
 nlp = spacy.load("ru_core_news_sm")
@@ -67,5 +67,57 @@ def jsonl_to_json(path):
         obj = [json.loads(line) for line in lines]
     return obj
 
+def check_alignment(path, verbose=True):
+    with open(path) as f:
+        file = json.load(f)
+        total_misalligned = 0
+        data = []
+        for obj in file:
+            text = obj['text']
+
+            entities = obj['entities']
+            doc = nlp.make_doc(text)
+            ent_data = []
+            for start, end, label in entities:
+                entity_text = text[start:end]
+                tokens_in_entity = []
+                for token in doc:
+                    if start <= token.idx < end:
+                        tokens_in_entity.append(token.text)
+                ent_data.append({
+                    'text': entity_text,
+                    'label': label,
+                    'coords': f'{start}-{end}',
+                    'tokens': tokens_in_entity
+                })
+
+            
+            bilou_tags = offsets_to_biluo_tags(doc, entities)
+            total_misalligned += bilou_tags.count('-')
+            data.append({
+                'text': text,
+                'ent_data': ent_data, 
+                'bilou_tags': bilou_tags,
+                'misaligned': f'{bilou_tags.count("-")}'
+            })
+        if verbose:
+            faulty = 0
+            for item in data:
+                if item['misaligned'] != '0':
+                    print(f'"{item["text"]}"')
+                    print(f'entities: {item["ent_data"]}')
+                    print(f'bilou tags: {item["bilou_tags"]}')
+                    print(f'misaligned: {item["misaligned"]}')
+                    print('---')
+                    faulty += 1
+            ratio = round(faulty / (len(data)/100))
+            print(f'\nTOTAL MISALLIGNED: {total_misalligned}\nTOTAL FAULTY EXAMPLES: {faulty}\nFAULTY PERCENTAGE: {ratio}%')
+    
+    return data, total_misalligned, faulty
+
+
+
+if __name__ == '__main__':
+    check_alignment('data/processed_test.json')
 
 #to_spacy('data/processed_data_ts.json', 'test_data_1.spacy')
