@@ -5,6 +5,7 @@ from spacy.tokens import DocBin
 from spacy.training import offsets_to_biluo_tags
 
 
+
 nlp = spacy.load("ru_core_news_sm")
 def transmute(dict, key):
 
@@ -100,24 +101,69 @@ def check_alignment(path, verbose=True):
                 'bilou_tags': bilou_tags,
                 'misaligned': f'{bilou_tags.count("-")}'
             })
-        if verbose:
-            faulty = 0
-            for item in data:
-                if item['misaligned'] != '0':
+
+        faulty = 0
+        for item in data:
+            if item['misaligned'] != '0':
+                if verbose:
                     print(f'"{item["text"]}"')
                     print(f'entities: {item["ent_data"]}')
                     print(f'bilou tags: {item["bilou_tags"]}')
                     print(f'misaligned: {item["misaligned"]}')
                     print('---')
-                    faulty += 1
+                faulty += 1
             ratio = round(faulty / (len(data)/100))
-            print(f'\nTOTAL MISALLIGNED: {total_misalligned}\nTOTAL FAULTY EXAMPLES: {faulty}\nFAULTY PERCENTAGE: {ratio}%')
+            if verbose:
+                print(f'\nTOTAL MISALLIGNED: {total_misalligned}\nTOTAL FAULTY EXAMPLES: {faulty}\nFAULTY PERCENTAGE: {ratio}%')
     
     return data, total_misalligned, faulty
 
+def count_tags(path=None, dict=None):
+    if path:
+        with open(path) as f:    
+            data = json.load(f)
+    elif dict:
+        data = dict
+
+    tags = []
+    for obj in data:
+        for ent in obj['entities']:
+            tags.append(ent[2])
+
+    tag_data = {}
+    for tag in set(tags):
+        tag_data[tag] =  tags.count(tag)
+
+    total_tags = 0
+    for key in tag_data.keys():
+        total_tags += tag_data[key]
+    
+    tag_data['total_strings'] = len(data)
+    tag_data['total_tags'] = total_tags
+    
+    return tag_data
+
+def remove_faulty(path):
+    data, total, faulty_str = check_alignment(path, verbose=False)
+    faulty_messages = []
+    for item in data:
+        if item['misaligned'] != '0':
+            faulty_messages.append(item['text'])
+
+    with open(path) as f:
+        nofaulty = []
+        for obj in json.load(f):
+            if obj['text'] not in faulty_messages:
+                nofaulty.append(obj)
+
+    return nofaulty
 
 
 if __name__ == '__main__':
-    check_alignment('data/processed_test.json')
+    with open('data/processed_kirill_nofaulty.json', 'w') as f:
+        f.truncate(0)
+        json.dump(remove_faulty('data/processed_kirill.json'), f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    print(count_tags('data/processed_kirill.json'))
+    print(count_tags('data/processed_kirill_nofaulty.json'))
 
 #to_spacy('data/processed_data_ts.json', 'test_data_1.spacy')
