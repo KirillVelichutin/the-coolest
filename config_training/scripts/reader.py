@@ -35,10 +35,15 @@ def read_data(data_path):
 
             data_list = []
             for item in data:
-                text = item["text"]
-                entities = [(start, end, label) for start, end, label in item["entities"]]
-                data_list.append((text, {"entities": entities}))
-                
+                if item["text"]:
+                    text = item["text"]
+                    entities = [(start, end, label) for start, end, label in item["entities"]]
+                    data_list.append((text, {"entities": entities}))
+                else:
+                    text = item["message"]
+                    entities = [(start, end, label) for start, end, label in item["entities"]]
+                    data_list.append((text, {"entities": entities}))
+
             return(data_list)
             
     elif format_type == 'csv':
@@ -57,5 +62,5 @@ def read_data(data_path):
                 else:
                     item['entities'] = row['entities']
             data.append(item)
-        
+    
     return data
