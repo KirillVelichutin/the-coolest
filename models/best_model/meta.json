@@ -18,10 +18,18 @@
   },
   "labels":{
     "ner":[
+      "CITY",
+      "COUNTRY",
+      "DATE",
+      "DOB",
       "EMAIL",
+      "FLIGHT",
       "NAME",
+      "ORDER_NUMBER",
       "PASSPORT",
-      "PHONE"
+      "PHONE",
+      "TICKET_NUMBER",
+      "TIME"
     ]
   },
   "pipeline":[
