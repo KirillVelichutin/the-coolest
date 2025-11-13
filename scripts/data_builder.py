@@ -10,13 +10,13 @@ fake = setup_faker_providers(fake)  # добавляем кастомные пр
 df = pd.read_csv(os.path.join('data', 'airports_rus.csv'))
 
 BASE_TAGS = ['PHONE', 'PASSPORT', 'NAME', 'DOB', 'EMAIL', 'AIRPORT', 'CITY', 'COUNTRY', 'FLIGHT', 'TIME', 'DATE',] # 'TICKET']
-OTHER_TAGS = get_all_document_types()
-TAGS = BASE_TAGS + OTHER_TAGS
+OTHER_TAGS = get_all_document_types
+TAGS = BASE_TAGS + OTHER_TAGS()
 
 DATAGEN = {
     'PHONE': lambda: fake.phone_number(),
     'PASSPORT': lambda: fake.passport_number(),
-    'NAME': lambda: fake.name(),
+    'NAME': lambda: fake.passenger_name(), # изменено
     'DOB': lambda: fake.date_of_birth(),
     'EMAIL': lambda: fake.email(),
     'AIRPORT': lambda: random.choice(df[random.choice(['Название аэропорта', 'Код ИАТА'])].dropna().reset_index(drop=True)),
@@ -32,7 +32,8 @@ DATAGEN = {
     'BOOKING_REF': lambda: fake.booking_ref(),
     'BOARDING_PASS': lambda: fake.boarding_pass(),
     'EMD_NUMBER': lambda: fake.emd_number(),
-    'ORDER_NUMBER': lambda: fake.order_number()
+    'ORDER_NUMBER': lambda: fake.order_number(),
+    'FFP_NUMBER': lambda: fake.ffp_number() # добавлено
 }
 
 
