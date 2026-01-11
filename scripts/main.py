@@ -1,5 +1,4 @@
 import spacy
-import datetime
 
 from get_datetime import parse_time, parse_date, ngrams, get_datetime_singletoken, get_dotted_date
 from get_docs import process_request
