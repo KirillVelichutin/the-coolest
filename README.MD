@@ -21,7 +21,7 @@ S7NER - это алгоритм по извлечению именованных
 
 **загрузка модели**
 ```
-по [ссылке](https://disk.yandex.ru/d/OrHqPXKCpxFFWQ) загрузите модель, извлеките в папку models
+по [ru_date_time](https://disk.yandex.ru/d/OrHqPXKCpxFFWQ) загрузите модель, извлеките в папку models
 ```
 **использование**
 ```
