@@ -19,6 +19,10 @@ S7NER - это алгоритм по извлечению именованных
 
 # Quick Start
 
+**загрузка модели**
+```
+по [ссылке](https://disk.yandex.ru/d/OrHqPXKCpxFFWQ) загрузите модель, извлеките в папку models
+```
 **использование**
 ```
 from main import S7ner
