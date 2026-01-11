@@ -45,7 +45,8 @@ class S7ner():
                 int(''.join(''.join(item[1].split('-')).split(':'))) # checking for failed parses
             except:
                 tags.pop(tags.index(item))
-
+        
+        print(tags)
         #remove repeating items       
         seen = set()
         tags = [t for t in tags if not (t[0] in {'date', 'time'} and t[1] in seen or seen.add(t[1]))]

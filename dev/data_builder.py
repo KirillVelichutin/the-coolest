@@ -175,5 +175,13 @@ def generate_data(size, export_file=None):
     return data
 
 
+def bulkreplace(data_path, exp_path):
+    with open(data_path, 'r') as f:
+        data = json.load(f)
+    augmented = [replaceAndLabel(obj['message']) for obj in data]
+    print(augmented[10:30])
+    with open(exp_path, 'w') as f:
+        json.dump(augmented, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+        
 
-
+bulkreplace('data/rawtimedate.json', 'data/datetime_markup.json')

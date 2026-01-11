@@ -36,7 +36,6 @@ def rnd_name():
     return random.choice((f'{fake_name[0]} {fake_name[1]}', f'{fake_name[1]} {fake_name[2]}', ' '.join(fake_name)))
 
 
-
 DATAGEN = {
     'PHONE': lambda: fake.phone_number(),
     'PASSPORT': lambda: fake.passport_number(),
@@ -99,6 +98,7 @@ TIME = [
         "вылетаю ",
         "прилетаю",
         "приезжаю",
+        "взлёт в",
         "в",
         "часы прилёта",
         "часы вылета",

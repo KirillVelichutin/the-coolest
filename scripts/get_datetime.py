@@ -348,7 +348,7 @@ all_single_tokens = {
 }
 
 def is_datetime_singletoken(token):
-    return most_similar(token, list(all_single_tokens.keys()), threshold=0.7)  
+    return most_similar(token, list(all_single_tokens.keys()), threshold=0.75)  
 
 def get_datetime_singletoken(sentence):
     tokens = sentence.split()

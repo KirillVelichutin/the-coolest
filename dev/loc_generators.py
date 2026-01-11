@@ -255,7 +255,7 @@ HALF = [
 
 
 def worded_time():
-    return random.choice((f'{random.choice(HOURS)} {random.choice(MINUTES)}', f'пол {random.choice(HALF)}'))
+    return random.choices((f'{random.choice(HOURS)} {random.choice(MINUTES)}', f'{random.choice(("пол", "половина"))}{random.choice(('', ' '))}{random.choice(HALF)}', f'{random.choice(random.choice((HOURS, str(random.randint(0, 24)))))} {random.choice(('часа', 'часов'))} {random.choice((random.choice(('утра', 'дня', "вечера", "ночи")), ''))}', f'{random.choice((random.choice(HOURS), str(random.randint(0, 24))))} {random.choice(('утра', 'дня', "вечера", "ночи"))}'), weights=(5, 3, 3, 3), k=1)[0]
 
 import sys
 
@@ -266,3 +266,4 @@ def worded_date():
     day = NUMBERS[random.choice(list(NUMBERS.keys()))][random.choice((1, 2))]
     year = random.randint(1900, 3000)
     return random.choice((f'{day} {month}', f'{month} {day}', f'{day} {month} {year}', f'{month} {day} {year}', f'{month} {year}'))
+
