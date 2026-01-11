@@ -6,7 +6,7 @@ from get_docs import process_request
 from get_airports import get_airports, is_airport
 
 rucore = spacy.load("ru_core_news_sm")
-datetime = spacy.load('models/ru_date_time/model-best')
+datetime = spacy.load('models/ru_date_time_v3')
 
 class S7ner():
     conversiontable = {
@@ -52,7 +52,7 @@ class S7ner():
         tags = [t for t in tags if not (t[0] in {'date', 'time'} and t[1] in seen or seen.add(t[1]))]
         #check if the contents partially repeat
         def is_close(t1, t2, message):
-            threshold = len(t1)
+            threshold = len(t1) + 8
             p1, p2 = message.find(t1), message.find(t2)
             if p1 != -1 and p2 != -1 and abs(p1 - p2) <= threshold:
                 return message[p1:p2+len(t2)]

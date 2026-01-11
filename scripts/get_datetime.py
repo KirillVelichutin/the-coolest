@@ -182,25 +182,88 @@ def std_time(input_time):
     digits = ''.join(re.findall(r'-?\d+', input_time))
     splt = input_time.split()
 
+    #remove irrelevant words
+    for token in splt:
+        if most_similar(token, ["часа", "часов"], threshold=0.9) in ["часа", "часов"]:
+            splt.pop(splt.index(token))
+
     hours = []
     minutes = []
     all_obj = []
     digitsAndWords = False
-    daynight_correction = False
+    daynight_correction = None
     half = 0
     next = None
     previous = None
 
     if len(digits) == 4:
-        return datetime.timedelta(hours = int(digits[0] + digits[1]), minutes = int(digits[2] + digits[3]))
+        hours_int = int(digits[0] + digits[1])
+        minutes_int = int(digits[2] + digits[3])
+        # Check for day/night words
+        for word in daynight:
+            if word in input_time:
+                for key, values in DAYNIGHT.items():
+                    if word in values:
+                        daynight_correction = key
+                        break
+                if daynight_correction is not None:
+                    break
+        # Apply Russian time convention
+        if daynight_correction == 0:  # ночь/утро
+            if "ноч" in input_time:  # ночь
+                if hours_int >= 1 and hours_int <= 4:  # 1-4 ночи = AM
+                    if hours_int >= 12:
+                        hours_int -= 12
+                else:  # 5-12 ночи = PM
+                    if hours_int < 12:
+                        hours_int += 12
+            else:  # утро = AM
+                if hours_int >= 12:
+                    hours_int -= 12
+        elif daynight_correction == 1:  # день/вечер
+            if "день" in input_time or "дня" in input_time or "днём" in input_time:  # день
+                if hours_int < 12:
+                    hours_int += 12
+            else:  # вечер = PM
+                if hours_int < 12:
+                    hours_int += 12
+        return datetime.timedelta(hours=hours_int, minutes=minutes_int)
+        
     elif len(digits) == 3:
-        return datetime.timedelta(hours = int(digits[0]), minutes = int(digits[1] + digits[2]))
+        hours_int = int(digits[0])
+        minutes_int = int(digits[1] + digits[2])
+        # Check for day/night words
+        for word in daynight:
+            if word in input_time:
+                for key, values in DAYNIGHT.items():
+                    if word in values:
+                        daynight_correction = key
+                        break
+        # Apply Russian time convention
+        if daynight_correction == 0:  # ночь/утро
+            if "ноч" in input_time:  # ночь
+                if hours_int >= 1 and hours_int <= 4:  # 1-4 ночи = AM
+                    if hours_int >= 12:
+                        hours_int -= 12
+                else:  # 5-12 ночи = PM
+                    if hours_int < 12:
+                        hours_int += 12
+            else:  # утро = AM
+                if hours_int >= 12:
+                    hours_int -= 12
+        elif daynight_correction == 1:  # день/вечер
+            if hours_int < 12:
+                hours_int += 12
+        return datetime.timedelta(hours=hours_int, minutes=minutes_int)
+        
     elif len(digits) < 3 and len(digits) > 0:
         digitsAndWords = True
+        daynight_word = None  # Initialize
         for token in splt:
             dn = std_value(most_similar(token, daynight), DAYNIGHT)
             if dn in (1, 0):
                 daynight_correction = dn
+                daynight_word = token
                 continue
 
             try:
@@ -210,9 +273,10 @@ def std_time(input_time):
                 tl = std_value(most_similar(token, time_list), time_words)
                 minutes.append(tl)
 
-            all_obj.append(tl * 60)
+            all_obj.append(tl * 60 if isinstance(tl, int) else tl)
     
     if not digitsAndWords:
+        daynight_word = None  # Initialize
         for token in splt:
             if token in minutesignifier and len(hours) != 0:
                 all_obj.pop(-1)
@@ -230,6 +294,7 @@ def std_time(input_time):
             dn = std_value(most_similar(token, daynight), DAYNIGHT)
             if dn in (1, 0):
                 daynight_correction = dn
+                daynight_word = token
                 continue
 
             tl = std_value(most_similar(token, time_list), time_words)
@@ -251,24 +316,48 @@ def std_time(input_time):
     if len(time) > 3:
         return 'TIME_INVALID: too many objects'
 
+    # Calculate complete_time in hours
     if len(hours) == 2:
-        complete_time = hours[0] + hours[1] / 60 + 12
+        complete_hours = (hours[0] + hours[1] / 60) / 60
     else:
-        complete_time = sum(minutes) + sum(hours) + half
-
-    if daynight_correction == 0:
-        if complete_time < 720:
-            daynight_correction = 0
-        else:
-            daynight_correction = 720
-    elif daynight_correction == 1:
-        if complete_time < 300:
-            daynight_correction = 0
-        else:
-            daynight_correction = 720
-
-    return datetime.timedelta(minutes = complete_time + daynight_correction)
-
+        complete_hours = sum(hours) / 60 + sum(minutes) / 60 + half / 60
+    
+    # Apply Russian time convention
+    if daynight_correction is not None:
+        if daynight_correction == 0:  # ночь/утро
+            if daynight_word and "ноч" in daynight_word:  # ночь
+                # Special Russian convention:
+                # 1-4 ночи = AM (01:00-04:00)
+                # 5-12 ночи = PM (17:00-00:00)
+                if complete_hours >= 1 and complete_hours <= 4:  # 1-4 ночи = AM
+                    # Already in correct AM format (1-4)
+                    if complete_hours == 12:
+                        complete_hours = 0
+                    elif complete_hours > 12:
+                        complete_hours -= 12
+                else:  # 5-12 ночи = PM
+                    if complete_hours < 12:
+                        complete_hours += 12
+                    elif complete_hours == 12:
+                        complete_hours = 0
+            else:  # утро = morning (AM)
+                # 1-12 утра = AM (01:00-00:00)
+                if complete_hours == 12:
+                    complete_hours = 0
+                elif complete_hours > 12:
+                    complete_hours -= 12
+        elif daynight_correction == 1:  # день/вечер (both PM)
+            # день/вечер = PM hours
+            # 1-11 дня/вечера = PM (13:00-23:00)
+            # 12 дня/вечера = 12:00 (noon)
+            if complete_hours < 12:
+                complete_hours += 12
+            # 12 stays as 12
+    
+    # Convert hours to minutes for timedelta
+    complete_minutes = complete_hours * 60
+    
+    return datetime.timedelta(minutes=complete_minutes)
 
 def parse_date(message):
     date_obj = std_date(message)
@@ -330,7 +419,7 @@ def ngrams(message):
         doc = nlp(message + ' ' + random.choice(rndcontext))
         tokens = [token.text for token in doc]
     ngram_list = []
-    for n in range(2, 7):
+    for n in range(4, 7):
         for i in range(len(tokens) - n + 1):
             ngram_list.append(' '.join(tokens[i:i + n]))
     return ngram_list
@@ -348,7 +437,7 @@ all_single_tokens = {
 }
 
 def is_datetime_singletoken(token):
-    return most_similar(token, list(all_single_tokens.keys()), threshold=0.75)  
+    return most_similar(token, list(all_single_tokens.keys()), threshold=0.8)  
 
 def get_datetime_singletoken(sentence):
     tokens = sentence.split()
@@ -364,5 +453,6 @@ def get_datetime_singletoken(sentence):
     return datetimes
 
 if __name__ == '__main__':
-    print(get_datetime_singletoken('я вылетаю в индию завтра в полночь'))
-    print(get_dotted_date('22.02.2024'))
+    while True:
+        message = input('type: ')
+        print(parse_date(message))

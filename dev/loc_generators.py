@@ -255,7 +255,7 @@ HALF = [
 
 
 def worded_time():
-    return random.choices((f'{random.choice(HOURS)} {random.choice(MINUTES)}', f'{random.choice(("пол", "половина"))}{random.choice(('', ' '))}{random.choice(HALF)}', f'{random.choice(random.choice((HOURS, str(random.randint(0, 24)))))} {random.choice(('часа', 'часов'))} {random.choice((random.choice(('утра', 'дня', "вечера", "ночи")), ''))}', f'{random.choice((random.choice(HOURS), str(random.randint(0, 24))))} {random.choice(('утра', 'дня', "вечера", "ночи"))}'), weights=(5, 3, 3, 3), k=1)[0]
+    return random.choices((f'{random.choice(HOURS)} {random.choice(MINUTES)}', f'{random.choice(("пол", "половина"))}{random.choice(('', ' '))}{random.choice(HALF)}', f'{random.choice(random.choice((HOURS, str(random.randint(0, 24)))))} {random.choice(('часа', 'часов'))} {random.choice((random.choice(('утра', 'дня', "вечера", "ночи")), ''))}', f'{random.choice((random.choice(HOURS), str(random.randint(0, 24))))} {random.choice(('утра', 'дня', "вечера", "ночи"))}', f'час {random.choice(("дня", "ночи"))}'), weights=(5, 3, 3, 3, 1), k=1)[0]
 
 import sys
 
