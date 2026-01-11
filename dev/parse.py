@@ -1,14 +1,18 @@
 import json
-
 import spacy
+import re
+import pandas as pd
 from spacy.tokens import DocBin
 from spacy.training import offsets_to_biluo_tags
-from spacy.tokens import DocBin, SpanGroup
+
+from converter import convert_to_spacy
+
 
 nlp = spacy.load("ru_core_news_sm")
 def transmute(dict, key):
+
     new_dict = {key: []}
-    
+
     try:
         for item in dict[key]:
             new_dict[key].append((item[0], item[1], item[2]))
@@ -28,11 +32,11 @@ def examples(path):
             entities = transmute(item, 'entities')
             training_data.append((text, entities))
 
-    return training_data # [(text, {'entities': [()]})]
-                         # to use as spacy Example: examples = [Example.from_dict(nlp.make_doc(text), example) for text, example in data]
+    return training_data 
 
 def to_spacy(path, save_to):
 
+    nlp = spacy.load('ru_core_news_sm')
     doc_bin = DocBin()
     
     with open(path, "r") as f:
@@ -41,7 +45,6 @@ def to_spacy(path, save_to):
     for item in data:
         doc = nlp.make_doc(item["text"])
         
-        # Add entities
         if "entities" in item:
             entities = []
             for start, end, label in item["entities"]:
@@ -50,7 +53,6 @@ def to_spacy(path, save_to):
                     entities.append(span)
             doc.ents = entities
         
-        # Add categories
         if "cats" in item:
             doc.cats = item["cats"]
         
@@ -109,14 +111,13 @@ def check_alignment(path, verbose=True):
                     print(f'misaligned: {item["misaligned"]}')
                     print('---')
                 faulty += 1
-        ratio = round(faulty / (len(data)/100))
-        if verbose:
-            print(f'\nTOTAL MISALLIGNED: {total_misalligned}\nTOTAL FAULTY EXAMPLES: {faulty}\nFAULTY PERCENTAGE: {ratio}%')
+            ratio = round(faulty / (len(data)/100))
+            if verbose:
+                print(f'\nTOTAL MISALLIGNED: {total_misalligned}\nTOTAL FAULTY EXAMPLES: {faulty}\nFAULTY PERCENTAGE: {ratio}%')
     
     return data, total_misalligned, faulty
 
 def count_tags(path=None, dict=None):
-    data = []
     if path:
         with open(path) as f:    
             data = json.load(f)
@@ -157,110 +158,243 @@ def remove_faulty(path):
     return nofaulty
 
 
-def to_spacy(path, save_to):
-
-    doc_bin = DocBin()
+def prepare_data(path):
+    with open(path, 'r', encoding='utf-8-sig') as f:
+        lowertext = f.read().lower()
+        data = json.loads(lowertext)
     
-    with open(path, "r") as f:
-        data = json.load(f)
     
-    for item in data:
-        doc = nlp.make_doc(item["text"])
-        
-        # Add entities
-        if "entities" in item:
-            entities = []
-            for start, end, label in item["entities"]:
-                span = doc.char_span(start, end, label=label)
-                if span is not None:
-                    entities.append(span)
-            doc.ents = entities
-        
-        # Add categories
-        if "cats" in item:
-            doc.cats = item["cats"]
-        
-        doc_bin.add(doc)
+    train_ratio = 0.8
+    split_index = int(len(data) * train_ratio)
+    train_data = data[:split_index]
+    val_data = data[split_index:]
     
-    doc_bin.to_disk(save_to)
-    print(f"Converted {len(data)} documents to {save_to}")
+    with open('data/processed_data/train_data.json', 'w', encoding='utf-8') as f:
+        f.truncate(0)
+        json.dump(train_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    
+    with open('data/processed_data/val_data.json', 'w', encoding='utf-8') as f:
+        f.truncate(0)
+        json.dump(val_data, f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
-    return doc_bin
-
-# raw_path = "./data/doublespans1.json"
-# train_path = "./data/train.json"
-# val_path = "./data/val.json"
-# spanpath = "./data/spans.spacy"
-# validpath = "./data/dev.spacy"
-
-# with open(raw_path, "r") as f:
-#     lowerdata = f.read().lower()
-#     loaded = json.loads(lowerdata)
-#     random.shuffle(loaded)
-#     size = floor(len(loaded) / 5)
-#     train = loaded[0:size*4]
-#     val = loaded[size*4:]
-
-# with open(train_path, 'w') as f:
-#     json.dump(train, f, ensure_ascii=False, indent=1, separators=(',', ': '))
-
-# with open(val_path, 'w') as f:
-#     json.dump(val, f, ensure_ascii=False, indent=1, separators=(',', ': '))
-
-
-def make_snapcat(json_path, export_path):
-    # Create blank model
-    nlp = spacy.blank("ru")
-    with open(json_path, 'r') as f:
-        loaded = json.load(f)
-
-    # Convert to .spacy format for SpanCat
-    db = DocBin()
-
-    for item in loaded:
-        text = item["text"]
-        
-        # Step 1: Create a document from text
-        doc = nlp.make_doc(text)  # Tokenization happens here
-        
-        # Step 2: Convert character spans to token spans using char_span
-        spans = []
-        print(item["entities"])
-        if not len(item["entities"]) == 0:
-            for start_char, end_char, label in item["entities"]:
-                # char_span converts character positions to token indices
-                span = doc.char_span(start_char, end_char, label=label)
-
-                if span is None:
-                    # Common issue: character offsets don't align with tokens
-                    print(f"Warning: Could not create span for text '{text[start_char:end_char]}'")
-                    print(f"  Character positions: {start_char}-{end_char}")
-                    print(f"  Text at that position: '{text[start_char:end_char]}'")
-                    
-                    # Try to fix by finding the text in the document
-                    if text[start_char:end_char] in text:
-                        # Find where this text actually appears
-                        actual_start = text.find(text[start_char:end_char])
-                        if actual_start != -1:
-                            span = doc.char_span(actual_start, actual_start + (end_char - start_char), label=label)
-                            print(f"  Fixed: Using positions {actual_start}-{actual_start + (end_char - start_char)}")
-                
-            if span:
-                spans.append(span)
-                # print(f"Successfully created span: '{span.text}' → {label}")
-        
-        # Step 3: Store spans in doc.spans (REQUIRED for SpanCat)
-        # Use key "sc" (default for SpanCat) or choose your own
-        group = SpanGroup(doc, name="sc", spans=spans)
-        doc.set_ents(spans)
-        doc.spans["sc"] = group
-        db.add(doc)
-
-
-    # Save
-    db.to_disk(export_path)
-    print(f"\nCreated training data with {len(db)} documents")
-
+    with open('data/processed_data/train_nofaulty.json', 'w') as f:
+        f.truncate(0)
+        json.dump(remove_faulty('data/processed_data/train_data.json'), f, ensure_ascii=False, indent=1, separators=(',', ': '))
+    
+    with open('data/processed_data/val_nofaulty.json', 'w') as f:
+        f.truncate(0)
+        json.dump(remove_faulty('data/processed_data/val_data.json'), f, ensure_ascii=False, indent=1, separators=(',', ': '))
 
     
+    convert_to_spacy('data/processed_data/train_nofaulty.json', "train")
+    convert_to_spacy('data/processed_data/val_nofaulty.json', "dev")
 
+
+def find_passports(text):
+    df = pd.read_csv('data/passports_regions_data.csv')
+    val_passport_codes = list(map(str, df['Код в серии паспорта РФ'].tolist()))
+
+    df = pd.read_csv('data/international_data.csv')
+    val_international_codes = list(map(str, df['Код принадлежности документа'].tolist()))
+
+
+    passports = []
+
+    passport_pattern = r'\b(\d{2})[\s-]?(\d{2})[\s-]?(\d{6})\b'
+    international_pattern = r'\b(\d{2})[-\s]?(\d{7})\b'
+
+    for match in re.finditer(passport_pattern, text):
+        raw = match.group()
+
+        if raw[:2] in val_passport_codes:
+            formatted = raw[:4] + ' ' + raw[4:]
+            passports.append({
+                "token": formatted,
+                "tag": "PASSPORT",
+            })
+
+    for match in re.finditer(international_pattern, text):
+        raw = match.group()
+
+        if raw[:2] in val_international_codes:
+            formatted = raw[:2] + ' ' + raw[2:]
+            passports.append({
+                "token": formatted,
+                "tag": "INTERNATIONAL",
+            })
+
+    return passports
+
+def find_emails(text):    
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+    
+    emails = []
+    
+    for match in re.finditer(email_pattern, text):
+        inst = match.group()
+        
+        ent_type = "EMAIL"
+        
+        emails.append({
+            "token": inst,
+            "tag": ent_type,
+        })
+            
+    return emails
+
+def find_phones(text):    
+    phone_pattern = r'(?:\+?7|\b8)[\s\-()]?\d{3}[\s\-()]?\d{3}[\s\-()]?\d{2}[\s\-()]?\d{2}'
+    
+    phones = []
+    
+    for match in re.finditer(phone_pattern, text):
+        raw_match = match.group()
+        
+        cleaned = raw_match.replace(' ', '')
+        
+        if cleaned.startswith('+7') or cleaned.startswith('8'):
+            digits = cleaned[1:] if cleaned.startswith('+7') else cleaned
+            if len(digits) == 11 and digits.isdigit():
+                formatted = '+7 (' + digits[1:4] + ') ' + digits[4:7] + '-' + digits[7:9] + '-' + digits[9:11]
+            else:
+                formatted = cleaned
+        else:
+            formatted = cleaned
+
+        ent_type = "PHONE"
+        
+        phones.append({
+            "token": formatted,
+            "tag": ent_type,
+        })
+    
+    return phones
+
+def find_iata(text):
+    df = pd.read_csv('data/airports_rus.csv')
+    val_iata_codes = list(map(str, df['Код ИАТА'].tolist()))
+    
+    iatas = []
+    
+    iata_pattern = r'\b[A-Za-z]{3}\b'
+    
+    for match in re.finditer(iata_pattern, text):
+        raw_code = match.group().upper()
+        
+        if raw_code in val_iata_codes:
+            iatas.append({
+                "token": raw_code,
+                "tag": "IATA",
+            })
+    
+    return iatas
+
+def find_order_num(text):
+    order_num_pattern = r'\b(?!S7)(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{6,7}\b'
+    
+    order_nums = []
+    
+    for match in re.finditer(order_num_pattern, text):
+        raw_token = match.group()
+        
+        normalized_token = raw_token.upper()
+        ent_type = "ORDER_NUMBER"
+        
+        order_nums.append({
+            "token": normalized_token,
+            "tag": ent_type,
+        })
+    
+    return order_nums
+
+def find_ticket_num(text):
+    ticket_num_pattern = r'\b585\d{10}\b'
+    
+    ticket_nums = []
+    
+    for match in re.finditer(ticket_num_pattern, text):
+        raw_token = match.group()
+        
+        normalized_token = raw_token.upper()
+        ent_type = "TICKET_NUMBER"
+        
+        ticket_nums.append({
+            "token": normalized_token,
+            "tag": ent_type,
+        })
+    
+    return ticket_nums
+
+def find_flight(text):
+    flight_pattern = r'\bS7\s?\d{1,4}\b'
+    
+    flights = []
+    
+    for match in re.finditer(flight_pattern, text):
+        raw_match = match.group()
+        
+        normalized = "S7 " + raw_match[2:].replace(" ", "")
+        ent_type = "FLIGHT"
+        
+        flights.append({
+            "token": normalized,
+            "tag": ent_type,
+        })
+    
+    return flights
+    
+
+def process_request(user_message):
+    text = re.sub(r'(\d)[\s*\-\(\)]+(?=\d)', r'\1', user_message)
+
+    ents_data = []
+    
+    flights = find_flight(text)
+    passports = find_passports(text)
+    phones = find_phones(text)
+    emails = find_emails(text)
+    iatas = find_iata(text)
+    ticket_nums = find_ticket_num(text)
+    order_nums = find_order_num(text)
+    
+    if passports:
+        for passport in passports:
+            ents_data.append(passport)
+    
+    if phones:
+        for phone in phones:
+            ents_data.append(phone)
+    
+    if emails:
+        for email in emails:
+            ents_data.append(email)
+            
+    if iatas:
+        for iata in iatas:
+            ents_data.append(iata)
+    
+    if ticket_nums:
+        for ticket_num in ticket_nums:
+            ents_data.append(ticket_num)
+            
+    if flights:
+        for flight in flights:
+            ents_data.append(flight)
+    
+    if order_nums:
+        for order_num in order_nums:
+            if order_num["token"].lower() not in [data["token"] for data in ents_data]:
+                ents_data.append(order_num)
+
+
+    result = {
+        "message": text,
+        "tokens": ents_data
+    }
+    
+    output = json.dumps(result, ensure_ascii=False, indent=2)
+    return output
+
+if __name__ == "__main__":
+    user_message = user_message = "я вылетаю в париж 31 декабря S79520, меня зовут сёмин никита мой номер телефона +7 (285) 832-04-84. мой номер паспорта 40- 18 -295647 я вылетаю из домодедово в париж 64-7202067 aba 34C0Z0, 5854033941712 test123@mail.com"
+    print(process_request(user_message))

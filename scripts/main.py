@@ -46,7 +46,6 @@ class S7ner():
             except:
                 tags.pop(tags.index(item))
         
-        print(tags)
         #remove repeating items       
         seen = set()
         tags = [t for t in tags if not (t[0] in {'date', 'time'} and t[1] in seen or seen.add(t[1]))]
@@ -72,6 +71,9 @@ class S7ner():
         for item in get_datetime_singletoken(text):
             tags.append(item)
 
+        seen = set()
+        tags = [t for t in tags if not (t[0] in {'date', 'time'} and t[1] in seen or seen.add(t[1]))]
+        
         #people and locations
         rucore_doc = rucore(text)
         locs = []

@@ -42,7 +42,7 @@ def process_user_message(message):
     if len(tags) == 0:
         reply = "❌ не нашли ценной информации ..."
     else:
-        reply = "🧠 *Распознанные сущности:*\n"
+        reply = "🧠 *Распознанные данные:*\n"
         reply += "━━━━━━━━━━━━━━━━━━━━\n"
         for tag in tags:
             reply += f"**{tag[0]}**  →  `{tag[1]}`\n"

@@ -395,7 +395,10 @@ def get_dotted_date(message):
     dates =  re.findall(r'\d{2}[.-]\d{2}[.-]\d{4}', message)
     datelist = []
     for date in dates:
-        datelist.append(('date', str(datetime.datetime.strptime(date, "%d.%m.%Y").date()), date))
+        try:
+            datelist.append(('date', str(datetime.datetime.strptime(date, "%d.%m.%Y").date()), date))
+        except:
+            pass
     return datelist
 
 #slicing the message to enhance model performance
