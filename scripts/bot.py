@@ -42,17 +42,17 @@ def process_user_message(message):
     if len(tags) == 0:
         reply = "❌ не нашли ценной информации ..."
     else:
-        reply = "🧠 *Распознанные данные:*\n"
+        reply = "🧠 Распознанные данные:\n"
         reply += "━━━━━━━━━━━━━━━━━━━━\n"
         for tag in tags:
-            reply += f"**{tag[0]}**  →  `{tag[1]}`\n"
+            reply += f"{tag[0]}  →  {tag[1]}\n"
         reply += "━━━━━━━━━━━━━━━━━━━━"
     
     with open('data/output.txt', 'a', encoding='utf-8') as f:  # 'with' automatically closes
         f.write(f"message: {message_text}\n\t\t{tags}\n")
         f.flush()  # Force write
     
-    telegram_bot.reply_to(message, reply, parse_mode='Markdown')
+    telegram_bot.reply_to(message, reply)
 
 def run_bot():
     reopen_stdout()
